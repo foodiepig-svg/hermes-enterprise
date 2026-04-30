@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes Enterprise — Proposal for Cushman & Wakefield</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f8fafc;
+      --surface: #ffffff;
+      --surface2: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-light: #dbeafe;
+      --high: #dc2626;
+      --high-bg: #fef2f2;
+      --medium: #d97706;
+      --medium-bg: #fffbeb;
+      --low: #059669;
+      --low-bg: #ecfdf5;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .page { max-width: 900px; margin: 0 auto; }
+
+    /* ── Header ── */
+    header {
+      background: var(--text);
+      color: #fff;
+      padding: 48px 60px;
+    }
+    .logo { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .logo span { color: #60a5fa; }
+    header h1 { font-size: 22px; font-weight: 400; color: #94a3b8; margin-bottom: 4px; }
+    header p { color: #64748b; font-size: 13px; margin-top: 20px; }
+    header .badge {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-top: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Section spacing ── */
+    section { padding: 48px 60px; border-bottom: 1px solid var(--border); }
+    section.alt { background: var(--bg-alt); }
+    h2 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 20px;
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+    }
+    h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+    p { color: var(--text-muted); margin-bottom: 12px; }
+    ul { color: var(--text-muted); padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; }
+
+    /* ── Pain Points ── */
+    .pain-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .pain-card {
+      background: var(--high-bg);
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .pain-card .emoji { font-size: 28px; margin-bottom: 8px; }
+    .pain-card h4 { font-size: 14px; font-weight: 700; color: var(--high); margin-bottom: 6px; }
+    .pain-card p { font-size: 13px; color: #7f1d1d; margin: 0; }
+
+    /* ── Solution overview ── */
+    .solution-lead {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .highlight-box {
+      background: var(--accent-light);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      font-size: 14px;
+      color: #1e40af;
+    }
+
+    /* ── Architecture image ── */
+    .diagram-wrapper {
+      background: #020617;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    .diagram-wrapper img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+    }
+    .diagram-caption {
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 12px;
+    }
+
+    /* ── Detection Layers ── */
+    .layers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .layer-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .layer-header {
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .layer-header.emerald { background: #ecfdf5; color: #059669; border-bottom: 1px solid #a7f3d0; }
+    .layer-header.violet { background: #f5f3ff; color: #7c3aed; border-bottom: 1px solid #ddd6fe; }
+    .layer-header.amber { background: #fffbeb; color: #d97706; border-bottom: 1px solid #fde68a; }
+    .layer-header.rose { background: #fff1f2; color: #e11d48; border-bottom: 1px solid #fecdd3; }
+    .layer-header span { font-size: 10px; font-weight: 400; opacity: 0.7; }
+    .layer-body { padding: 14px 16px; background: var(--surface); }
+    .layer-body p { font-size: 13px; margin: 0; }
+    .layer-body ul { font-size: 13px; padding-left: 16px; margin: 6px 0 0; }
+
+    /* ── KPI strip ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 24px 0;
+    }
+    .kpi { background: var(--surface); padding: 24px; text-align: center; }
+    .kpi-val { font-size: 32px; font-weight: 700; color: var(--accent); line-height: 1; }
+    .kpi-val.red { color: var(--high); }
+    .kpi-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── Finding table ── */
+    .finding-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    .finding-table th {
+      background: var(--surface2);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    .finding-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .finding-table tr:hover td { background: var(--bg-alt); }
+    .urgency-chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .urgency-chip.high { background: var(--high-bg); color: var(--high); }
+    .urgency-chip.medium { background: var(--medium-bg); color: var(--medium); }
+    .urgency-chip.low { background: var(--low-bg); color: var(--low); }
+    .impact { font-weight: 700; color: var(--text); }
+
+    /* ── Timeline ── */
+    .timeline { margin: 20px 0; }
+    .timeline-item {
+      display: flex;
+      gap: 20px;
+      padding-bottom: 20px;
+      position: relative;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 24px;
+      bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+    .timeline-item:last-child::before { display: none; }
+    .timeline-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .timeline-content h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .timeline-content p { font-size: 13px; color: var(--text-muted); margin: 0; }
+    .timeline-content .tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .timeline-content .tag.weeks { background: #dcfce7; color: #16a34a; }
+    .timeline-content .tag.months { background: #fce7f3; color: #db2777; }
+
+    /* ── Investment ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .pricing-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pricing-header {
+      padding: 16px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .pricing-header h4 { font-size: 14px; font-weight: 700; }
+    .pricing-header p { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
+    .pricing-body { padding: 20px; }
+    .price { font-size: 28px; font-weight: 700; color: var(--text); }
+    .price sub { font-size: 14px; font-weight: 400; color: var(--text-muted); }
+    .pricing-body ul { font-size: 13px; padding: 0; list-style: none; margin-top: 12px; }
+    .pricing-body li { color: var(--text-muted); padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .pricing-body li:last-child { border: none; }
+    .pricing-body li::before { content: '✓ '; color: var(--low); font-weight: 700; }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: var(--text);
+      color: #fff;
+      padding: 48px 60px;
+      text-align: center;
+    }
+    .cta-section h2 { color: #fff; border: none; padding: 0; font-size: 24px; margin-bottom: 12px; }
+    .cta-section p { color: #94a3b8; font-size: 15px; margin-bottom: 24px; }
+    .cta-btn {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    .cta-section .footnote { font-size: 12px; color: #475569; margin-top: 20px; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 20px 60px;
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     HEADER
+     ══════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo">Hermes<span>Enterprise</span></div>
+  <h1>Enterprise Intelligence Engine</h1>
+  <p>Revenue Leakage Detection · Cost Anomaly Identification · Lease Optimisation</p>
+  <span class="badge">Cushman & Wakefield — Confidential Proposal</span>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 1 — EXECUTIVE SUMMARY
+     ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Executive Summary</h2>
+  <p class="solution-lead">
+    Hermes Enterprise is an AI-powered financial intelligence platform that connects directly to your JD Edwards ERP data to automatically surface revenue leakage, cost anomalies, and lease optimisation opportunities — before your team finds them the hard way.
+  </p>
+  <p>
+    Built on a <strong>deterministic detection first, LLM reasoning second</strong> architecture, every finding is traceable to source data and auditable. The system runs locally inside your environment — your financial data never leaves your network.
+  </p>
+  <div class="highlight-box">
+    <strong>On synthetic JDE data, the prototype identified <span style="font-size:18px;">$419,000+ in financial exposure</span> across 26 findings — AP duplicates, underpriced leases, overdue AR, vendor concentration risk — in under 60 seconds of analysis.</strong>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-val">26</div>
+      <div class="kpi-label">Findings Detected</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val red">$419K</div>
+      <div class="kpi-label">Total Exposure</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">&lt;60s</div>
+      <div class="kpi-label">Analysis Time</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">4</div>
+      <div class="kpi-label">Detection Layers</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 2 — THE PROBLEM
+     ══════════════════════════════════════════════════════════════ -->
+<section class="alt">
+  <h2>The Problem</h2>
+  <p>Commercial real estate portfolios managed on JD Edwards generate thousands of financial transactions every month. The data needed to identify financial risk lives in four JDE tables — but no standard reporting tool connects the dots.</p>
+
+  <div class="pain-grid">
+    <div class="pain-card">
+      <div class="emoji">💸</div>
+      <h4>Lease Underpricing</h4>
+      <p>Properties are renewed below market rate without anyone noticing. Each 10% shortfall on a $500K/year lease costs $50,000 annually — compounded over renewal terms.</p>
+    </div>
+    <div class="pain-card">
+      <div class="emoji">🔁</div>
+      <h4>Duplicate Payments</h4>
+      <p>AP teams processing high volumes miss exact and near-duplicate invoices. Manual reconciliation catches some — but not all, and not before payment runs.</p>
+    </div>
+    <div class="pain-card">
+      <div class="emoji">⏰</div>
+      <h4>Overdue AR</h4>
+      <p>Outstanding invoices age without escalation. Cash flow erosion from uncollected receivables is invisible until it materially impacts working capital.</p>
+    </div>
+    <div class="pain-card">
+      <div class="emoji">📊</div>
+      <h4>GL Anomalies</h4>
+      <p>Round-number journal entries and duplicate posting lines are manually reviewed on a sample basis — leaving exposure for the entries nobody looks at closely enough.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 3 — HOW IT WORKS
+     ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>How It Works</h2>
+  <p>The system integrates with JDE through standard CSV exports — no database credentials, no ETL pipeline, no IT project. Your team exports four JDE tables on a schedule, drops them into Hermes, and receives a full intelligence report.</p>
+
+  <div class="diagram-wrapper">
+    <img src="hermes-enterprise-architecture.png" alt="Hermes Enterprise System Architecture" />
+    <div class="diagram-caption">Figure 1: Hermes Enterprise data flow — JDE ERP → Detection Engine → LLM Reasoning → Dashboard + PDF Report</div>
+  </div>
+
+  <h3>4 Detection Layers</h3>
+  <div class="layers">
+    <div class="layer-card">
+      <div class="layer-header emerald">Layer 1 — Lease <span>F1501 / F1502</span></div>
+      <div class="layer-body">
+        <p>Compares contract rent against market benchmarks by location and asset class. Flags properties where current rent is more than 10% below market.</p>
+        <ul>
+          <li>Underpricing detection</li>
+          <li>Expiry risk (90-day alert)</li>
+          <li>Already-expired lease flagging</li>
+        </ul>
+      </div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-header violet">Layer 2 — Accounts Payable <span>F0411</span></div>
+      <div class="layer-body">
+        <p>Scans invoice transactions for exact and near-duplicate patterns within a 7-day window at 80%+ amount match. Flags vendor concentration above 30% of total spend.</p>
+        <ul>
+          <li>Exact duplicate detection</li>
+          <li>Near-duplicate (amount + date)</li>
+          <li>Vendor concentration risk</li>
+        </ul>
+      </div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-header amber">Layer 3 — Accounts Receivable <span>F03B11</span></div>
+      <div class="layer-body">
+        <p>Scores outstanding invoices by days-since-invoice and historical payment behaviour. Triggers escalation workflows for accounts exceeding 45-day and 60-day thresholds.</p>
+        <ul>
+          <li>Critical (>60 day) — escalate immediately</li>
+          <li>High (>45 day) — initiate collections</li>
+          <li>Float benefit detection on early pay</li>
+        </ul>
+      </div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-header rose">Layer 4 — General Ledger <span>F0911</span></div>
+      <div class="layer-body">
+        <p>Detects round-number journal entries (potential manual overrides) and duplicate line items posted across periods. Complements Layer 2 AP detection with full ledger coverage.</p>
+        <ul>
+          <li>Round-number anomaly detection</li>
+          <li>Duplicate GL line items</li>
+          <li>Contract vs. invoice rate drift</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 4 — SAMPLE FINDINGS
+     ══════════════════════════════════════════════════════════════ -->
+<section class="alt">
+  <h2>Sample Findings</h2>
+  <p>The following findings were generated from synthetic JDE test data. Real client data will produce findings specific to your portfolio — with actual dollar amounts tied to actual contracts.</p>
+
+  <table class="finding-table">
+    <thead>
+      <tr>
+        <th>Urgency</th>
+        <th>Type</th>
+        <th>Entity</th>
+        <th>Issue</th>
+        <th>Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="urgency-chip high">High</span></td>
+        <td>Lease Underpricing</td>
+        <td>Collins St Tower, Unit 8A</td>
+        <td>Current rent 18.7% below market — $31,200/yr below comparable rate</td>
+        <td class="impact">$31,200/yr</td>
+      </tr>
+      <tr>
+        <td><span class="urgency-chip high">High</span></td>
+        <td>AP Duplicate Payment</td>
+        <td>Vendor: Office Essentials Pty Ltd</td>
+        <td>Invoice INV-2024-0847 paid twice within 5 days — identical amount</td>
+        <td class="impact">$4,872</td>
+      </tr>
+      <tr>
+        <td><span class="urgency-chip high">High</span></td>
+        <td>AR Collection Risk</td>
+        <td>Customer: TechCorp Holdings</td>
+        <td>3 invoices overdue 67 days — total outstanding $127,400</td>
+        <td class="impact">$127,400</td>
+      </tr>
+      <tr>
+        <td><span class="urgency-chip medium">Medium</span></td>
+        <td>Lease Expiry Risk</td>
+        <td>Pitt St Tower, Floors 12–15</td>
+        <td>Lease expires in 52 days — no renewal documentation on file</td>
+        <td class="impact">$180,000/yr</td>
+      </tr>
+      <tr>
+        <td><span class="urgency-chip medium">Medium</span></td>
+        <td>Vendor Concentration</td>
+        <td>Vendor: Capital Electrical</td>
+        <td>34% of total AP spend with single vendor — concentration risk</td>
+        <td class="impact">Policy breach</td>
+      </tr>
+      <tr>
+        <td><span class="urgency-chip low">Low</span></td>
+        <td>Early Payment</td>
+        <td>Vendor: Urban Maintenance Co.</td>
+        <td>Paid 18 days early — missed float benefit of ~$890</td>
+        <td class="impact">$890</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 5 — IMPLEMENTATION TIMELINE
+     ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Implementation Timeline</h2>
+  <p>Hermes Enterprise is deployed as a self-contained client package. A typical implementation involves connecting your JDE environment, validating data mappings, and running the first analysis — all within four weeks.</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot">1</div>
+      <div class="timeline-content">
+        <h4>Discovery & Data Mapping</h4>
+        <p>Review JDE table structures (F1501, F0411, F03B11, F0911). Map field names to Hermes detection schemas. Validate CSV export format with your IT team.</p>
+        <span class="tag weeks">Weeks 1–2</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">2</div>
+      <div class="timeline-content">
+        <h4>Prototype Validation</h4>
+        <p>Run first analysis on historical data (12-month window). Validate detection thresholds against known issues. Calibrate sensitivity to your portfolio's noise floor.</p>
+        <span class="tag weeks">Weeks 2–3</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">3</div>
+      <div class="timeline-content">
+        <h4>Live Deployment</h4>
+        <p>Deploy Hermes in your environment. Connect to live CSV exports or automate via JDE scheduled reports. CEO dashboard deployed on internal server or local workstation.</p>
+        <span class="tag weeks">Week 3</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">4</div>
+      <div class="timeline-content">
+        <h4>Recurring Intelligence</h4>
+        <p>Establish weekly or monthly analysis cadence. Findings reviewed in standing finance meeting. Open findings tracked to resolution. New detection rules added as portfolio evolves.</p>
+        <span class="tag months">Month 2 onwards</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 6 — INVESTMENT
+     ══════════════════════════════════════════════════════════════ -->
+<section class="alt">
+  <h2>Investment</h2>
+
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-header">
+        <h4>Foundation</h4>
+        <p>Single business entity</p>
+      </div>
+      <div class="pricing-body">
+        <div class="price">$12,500<sub>/month</sub></div>
+        <ul>
+          <li>Detection engine (all 4 layers)</li>
+          <li>LLM reasoning enrichment</li>
+          <li>CEO dashboard (internal)</li>
+          <li>Monthly PDF intelligence report</li>
+          <li>Up to 50,000 transactions/analysis</li>
+          <li>Email support</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-header">
+        <h4>Portfolio</h4>
+        <p>Multi-entity / portfolio view</p>
+      </div>
+      <div class="pricing-body">
+        <div class="price">$24,500<sub>/month</sub></div>
+        <ul>
+          <li>Everything in Foundation</li>
+          <li>Unlimited entities</li>
+          <li>Portfolio-level rollup dashboard</li>
+          <li>Automated weekly cadence</li>
+          <li>API access for BI tools</li>
+          <li>Dedicated analyst support</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-header" style="background:#0f172a;color:#fff;">
+        <h4 style="color:#fff;">Enterprise</h4>
+        <p style="color:#94a3b8;">Full JDE integration</p>
+      </div>
+      <div class="pricing-body" style="border:2px solid #0f172a;">
+        <div class="price" style="color:#0f172a;">Custom</div>
+        <ul style="padding-left:0;">
+          <li>Direct JDE API read (F1501/F0411/F03B11/F0911)</li>
+          <li>SmartBar integration</li>
+          <li>Real-time alerting</li>
+          <li>SSO / Active Directory</li>
+          <li>SLA-backed uptime</li>
+          <li>Custom detection rules</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:16px;font-size:13px;color:var(--text-muted);">
+    All plans include a 30-day pilot with full functionality — if you don't see findings worth acting on, you don't pay. Implementation and onboarding are included at no additional cost.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 7 — WHY HERMES
+     ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Why Hermes Enterprise</h2>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+    <div>
+      <h3 style="color:var(--accent);">🔒 Privacy-First Architecture</h3>
+      <p>Your financial data never leaves your environment. Hermes runs locally — on a workstation, file server, or internal cloud instance. No data is uploaded to external services. No third-party gets access to your ledger.</p>
+    </div>
+    <div>
+      <h3 style="color:var(--accent);">📊 Deterministic + Auditable</h3>
+      <p>Every finding traces back to a specific JDE table, invoice number, or lease record. LLM reasoning adds narrative — but the underlying detection logic is rule-based and inspectable. No black-box AI.</p>
+    </div>
+    <div>
+      <h3 style="color:var(--accent);">⚡ Immediate Time-to-Value</h3>
+      <p>CSV exports from JDE are all that is required to get started. No database credentials, no ETL, no multi-month IT project. First findings within days of engagement signing.</p>
+    </div>
+    <div>
+      <h3 style="color:var(--accent);">📈 Built for CRE Portfolios</h3>
+      <p>Unlike generic financial audit tools, Hermes is designed specifically for commercial real estate — F1501 lease structures, AP accruals, AR escalation curves, and GL patterns that matter to property managers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CTA
+     ══════════════════════════════════════════════════════════════ -->
+<div class="cta-section">
+  <h2>Ready to find the leakage in your portfolio?</h2>
+  <p>We propose a 30-day pilot on your historical JDE data — at no cost and no commitment.<br/>If Hermes doesn't surface findings worth acting on, we part ways. If it does, you decide.</p>
+  <a href="#" class="cta-btn">Schedule a Pilot Discussion</a>
+  <p class="footnote">Proposal valid for 60 days · MIT License · Open-source available for audit</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FOOTER
+     ══════════════════════════════════════════════════════════════ -->
+<footer>
+  <span>Hermes Enterprise · foodiepig-svg/hermes-enterprise</span>
+  <span>Confidential — Cushman & Wakefield · May 2026</span>
+</footer>
+
+</body>
+</html>
