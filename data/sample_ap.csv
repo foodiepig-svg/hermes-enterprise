@@ -1,0 +1,21 @@
+invoice_id,vendor_id,vendor_name,invoice_date,due_date,amount,status,payment_date,description,gl_account
+AP-001,VEN-101,Facilities Mgmt Group,2024-01-15,2024-02-14,12500.00,Paid,2024-02-10,Facilities management - Jan,6100-001
+AP-002,VEN-102,Premium Cleaning Co,2024-01-20,2024-02-19,8400.00,Paid,2024-02-15,Office cleaning - Jan,6200-002
+AP-003,VEN-103,Office Supplies Direct,2024-01-22,2024-02-21,2100.00,Paid,2024-02-18,Stationery order,6300-003
+AP-004,VEN-101,Facilities Mgmt Group,2024-02-01,2024-03-02,12500.00,Paid,2024-02-28,Facilities management - Feb,6100-001
+AP-005,VEN-104,Energy Solutions Vic,2024-02-05,2024-03-06,18750.00,Paid,2024-03-01,Electricity - Feb,6400-004
+AP-006,VEN-105,Print & Copy Corp,2024-02-10,2024-03-11,3500.00,Paid,2024-03-08,Printing services,6300-005
+AP-007,VEN-101,Facilities Mgmt Group,2024-02-15,2024-03-17,12500.00,Paid,2024-03-15,Facilities management - Mar,6100-001
+AP-008,VEN-102,Premium Cleaning Co,2024-02-20,2024-03-21,8400.00,Paid,2024-03-18,Office cleaning - Feb,6200-002
+AP-009,VEN-106,Security Services AU,2024-03-01,2024-03-31,9200.00,Paid,2024-03-28,Security - Mar,6500-006
+AP-010,VEN-101,Facilities Mgmt Group,2024-03-05,2024-04-04,12500.00,Paid,2024-04-02,Facilities management - Apr,6100-001
+AP-011,VEN-104,Energy Solutions Vic,2024-03-07,2024-04-06,22100.00,Paid,2024-04-05,Electricity - Mar,6400-004
+AP-012,VEN-102,Premium Cleaning Co,2024-03-15,2024-04-14,8400.00,Paid,2024-04-12,Office cleaning - Mar,6200-002
+AP-013,VEN-101,Facilities Mgmt Group,2024-03-20,2024-04-19,12500.00,Pending,,Facilities management - Apr,6100-001
+AP-014,VEN-107,IT Support Solutions,2024-03-25,2024-04-24,15750.00,Paid,2024-04-22,IT helpdesk - Q1,6600-007
+AP-015,VEN-101,Facilities Mgmt Group,2024-04-02,2024-05-02,12500.00,Paid,2024-04-30,Facilities management - May,6100-001
+AP-016,VEN-102,Premium Cleaning Co,2024-04-10,2024-05-10,8400.00,Paid,2024-05-08,Office cleaning - Apr,6200-002
+AP-017,VEN-108,Horticulture Services,2024-04-15,2024-05-15,4200.00,Paid,2024-05-12,Landscaping - Apr,6500-008
+AP-018,VEN-101,Facilities Mgmt Group,2024-04-20,2024-05-20,12500.00,Paid,2024-05-17,Facilities management - May,6100-001
+AP-019,VEN-104,Energy Solutions Vic,2024-04-22,2024-05-22,19800.00,Pending,,Electricity - Apr,6400-004
+AP-020,VEN-101,Facilities Mgmt Group,2024-05-01,2024-05-31,12500.00,Pending,,Facilities management - Jun,6100-001

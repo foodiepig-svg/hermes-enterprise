@@ -1,0 +1,24 @@
+gl_account,account_name,company,period,amount,doc_type,doc_number,vendor_id,description
+6100-001,Facilities Management Expense,PROP001,2024-01,12500.00,PV,AP-001,VEN-101,Facilities management
+6100-001,Facilities Management Expense,PROP001,2024-02,12500.00,PV,AP-002,VEN-101,Facilities management
+6100-001,Facilities Management Expense,PROP001,2024-02,12500.00,PV,AP-003,VEN-101,Facilities management DUPLICATE
+6200-002,Cleaning Services Expense,PROP001,2024-01,8400.00,PV,AP-004,VEN-102,Office cleaning
+6200-002,Cleaning Services Expense,PROP001,2024-02,8400.00,PV,AP-005,VEN-102,Office cleaning
+6200-002,Cleaning Services Expense,PROP001,2024-03,8400.00,PV,AP-006,VEN-102,Office cleaning
+6400-004,Electricity & Utilities,PROP001,2024-02,18750.00,PV,AP-007,VEN-104,Electricity
+6400-004,Electricity & Utilities,PROP001,2024-03,22100.00,PV,AP-008,VEN-104,Electricity
+6400-004,Electricity & Utilities,PROP001,2024-04,19800.00,PV,AP-009,VEN-104,Electricity
+6500-006,Security Services,PROP001,2024-03,9200.00,PV,AP-010,VEN-106,Security
+6500-008,Horticulture & Landscaping,PROP001,2024-04,4200.00,PV,AP-011,VEN-108,Landscaping
+6600-007,IT Support & Maintenance,PROP001,2024-03,15750.00,PV,AP-012,VEN-107,IT helpdesk
+1500-001,Rent Receivable - Collins St,PROP001,2024-01,66725.00,RV,RENT-001,,Collins St Tower rent received
+1500-001,Rent Receivable - Collins St,PROP001,2024-02,66725.00,RV,RENT-002,,Collins St Tower rent received
+1500-002,Rent Receivable - South Yarra,PROP001,2024-01,38640.00,RV,RENT-003,,South Yarra rent received
+1500-002,Rent Receivable - South Yarra,PROP001,2024-02,38640.00,RV,RENT-004,,South Yarra rent received
+1500-003,Rent Receivable - Richmond,PROP001,2024-01,112500.00,RV,RENT-005,,Richmond Industrial rent received
+1500-003,Rent Receivable - Richmond,PROP001,2024-02,112500.00,RV,RENT-006,,Richmond Industrial rent received
+2100-001,Accounts Payable Control,PROP001,2024-01,-12500.00,PY,AP-001,VEN-101,Payment to Facilities Mgmt
+2100-001,Accounts Payable Control,PROP001,2024-02,-12500.00,PY,AP-002,VEN-101,Payment to Facilities Mgmt
+2100-001,Accounts Payable Control,PROP001,2024-02,-12500.00,PY,AP-003,VEN-101,Payment DUPLICATE to Facilities Mgmt
+6300-003,Office Supplies Expense,PROP001,2024-01,2100.00,PV,AP-013,VEN-103,Stationery
+6300-005,Printing & Reproduction,PROP001,2024-02,3500.00,PV,AP-014,VEN-105,Printing
