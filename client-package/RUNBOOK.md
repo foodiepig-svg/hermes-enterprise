@@ -19,9 +19,65 @@ Hermes analyses your JD Edwards ERP data and surfaces three types of findings:
 
 ---
 
-## Setup (5 minutes)
+## Option A — Run as Flask API (recommended for clients)
 
-### 1. Place your ERP export files in `data/`
+The Flask API accepts CSV uploads and returns findings directly. No Python needed on the client side — they just POST files.
+
+### 1. Start the server
+
+```bash
+python3.11 -m pip install --break-system-packages -r requirements.txt
+export GROQ_API_KEY=gsk_your_key_here
+python3.11 app.py
+```
+
+Server starts at `http://localhost:5000`.
+
+### 2. Upload CSVs and get findings
+
+```bash
+curl -X POST http://localhost:5000/api/analyze \
+  -F "leases=@leases.csv" \
+  -F "ap=@ap.csv" \
+  -F "ar=@ar.csv" \
+  -F "gl=@gl.csv"
+```
+
+The API accepts:
+- Form field names: `leases`, `ap`, `ar`, `gl`, `market_benchmarks`
+- Or a generic `files[]` field with any mix of CSV filenames
+- Or raw CSV text in form fields named `leases`, `ap`, `ar`, `gl`, `market_benchmarks`
+
+### 3. View the dashboard
+
+```bash
+# In a separate terminal:
+python3.11 -m http.server 8788 --directory www
+```
+
+Open `http://localhost:8788` — findings from the last run are loaded automatically.
+
+### 4. Get just a summary (no dashboard)
+
+```bash
+curl http://localhost:5000/api/summary
+```
+
+Returns: total findings, breakdown by urgency and type, total exposure in USD, top 5 findings.
+
+---
+
+## Option B — Run standalone (no server)
+
+If you prefer running the agent directly without a server:
+
+### 1. Install dependencies
+
+```bash
+python3.11 -m pip install --break-system-packages -r requirements.txt
+```
+
+### 2. Place your ERP export files in `data/`
 
 Replace these placeholder files with exports from JD Edwards:
 
@@ -31,11 +87,11 @@ Replace these placeholder files with exports from JD Edwards:
 | `ap.csv` | F0411 | Invoice number, vendor, invoice date, due date, amount, payment date |
 | `ar.csv` | F03B11 | Invoice number, customer, invoice date, due date, open amount, days overdue |
 | `gl.csv` | F0911 | Batch number, account, date, debit amount, credit amount, description |
-| `market_benchmarks.csv` | — | (Optional) Location, asset type, market rate psf — included as default |
+| `market_benchmarks.csv` | — | (Optional) Location, asset type, market rate psf — default included |
 
-**Export format:** CSV with headers. Column names are flexible — the engine matches common JDE column names automatically.
+**Rename your files** to match: `sample_leases.csv`, `sample_ap.csv`, `sample_ar.csv`, `sample_gl.csv`.
 
-### 2. Set your Groq API key
+### 3. Set your Groq API key
 
 ```bash
 # macOS / Linux
@@ -45,46 +101,20 @@ export GROQ_API_KEY=gsk_your_key_here
 set GROQ_API_KEY=gsk_your_key_here
 ```
 
-### 3. Install dependencies
-
-```bash
-python3.11 -m pip install --break-system-packages beautifulsoup4 groq lxml
-```
-
----
-
-## Run the Agent
+### 4. Run the agent
 
 ```bash
 GROQ_API_KEY=gsk_your_key_here python3.11 hermes_agent.py
 ```
 
-The agent will:
-1. Load and validate your data files
-2. Run all detection layers (lease, AP, AR, GL)
-3. Enrich findings with LLM-generated explanations
-4. Write results to `output/findings.json`
+Typical runtime: **20–40 seconds** on a full dataset.
 
-Typical runtime: **20–40 seconds** on a sample dataset.
-
----
-
-## View the Dashboard
+### 5. View the dashboard
 
 ```bash
 python3.11 -m http.server 8788 --directory www
+# → http://localhost:8788
 ```
-
-Then open in your browser:
-
-```
-http://localhost:8788
-```
-
-The dashboard shows:
-- Total findings count and urgency breakdown
-- Total estimated financial exposure
-- Filterable cards for each finding with full explanation
 
 ---
 
@@ -100,7 +130,7 @@ Each finding in `output/findings.json` follows this structure:
   "issue": "Monthly rent $38/psf is 18% below market rate ($46/psf)",
   "financial_impact": "$96,000 / year",
   "confidence": 0.85,
-  "evidence": "Market benchmark for Collins St Class A Office is $46/psf",
+  "evidence": ["Market benchmark for Collins St Class A Office is $46/psf"],
   "explanation": "This lease appears significantly underpriced relative to current market conditions...",
   "recommendation": "Approach the tenant 90 days before lease expiry to negotiate a market-rate renewal...",
   "urgency": "medium",
@@ -121,18 +151,14 @@ Each finding in `output/findings.json` follows this structure:
 Edit `config.py` to adjust detection thresholds:
 
 ```python
-# Lease: minimum deviation from market rate to flag (default 10%)
-LEASE_MARKET_THRESHOLD = 0.10
-
-# AP: minimum amount match % for near-duplicate detection (default 80%)
-AP_NEAR_DUPLICATE_THRESHOLD = 0.80
-
-# AP: days early to flag suspicious early payments (default 15)
-AP_EARLY_PAYMENT_DAYS = 15
-
-# AR: days overdue to flag as high/critical risk (default 45/60)
-AR_HIGH_RISK_DAYS = 45
-AR_CRITICAL_RISK_DAYS = 60
+LEASE_MARKET_THRESHOLD       = 0.10   # flag if >10% below market
+LEASE_EXPIRY_RISK_MONTHS    = 6      # flag if expiring within 6 months
+AP_NEAR_DUPLICATE_THRESHOLD = 0.80   # 80% amount match + 7-day window
+AP_EARLY_PAYMENT_DAYS       = 15     # flag payments >15 days early
+AP_VENDOR_CONCENTRATION     = 0.30   # flag vendor >30% of total spend
+AR_HIGH_RISK_DAYS           = 45     # high urgency threshold
+AR_CRITICAL_RISK_DAYS       = 60     # critical urgency threshold
+GL_ROUND_NUMBER_THRESHOLD   = 10000  # flag round amounts >$10K
 ```
 
 ---
@@ -142,25 +168,26 @@ AR_CRITICAL_RISK_DAYS = 60
 ```
 client-package/
 ├── RUNBOOK.md                    ← You are here
-├── hermes_agent.py               ← Main agent
+├── app.py                        ← Flask API server (run with: python3.11 app.py)
+├── hermes_agent.py               ← Standalone agent (run with: python3.11 hermes_agent.py)
 ├── config.py                     ← Detection thresholds
 ├── requirements.txt              ← Python dependencies
 ├── detection/
-│   ├── detection_engine.py       ← Core lease + AP detection
-│   ├── ap_ar_gl.py               ← AR + GL detection
-│   └── ap_extended.py            ← Vendor risk detection
+│   ├── detection_engine.py       ← Lease + core AP detection
+│   ├── ap_ar_gl.py              ← AR collection + GL anomalies
+│   └── ap_extended.py           ← Vendor risk detection
 ├── reasoning/
-│   └── llm_reasoning.py          ← LLM enrichment
+│   └── llm_reasoning.py         ← LLM enrichment (Groq / Claude / OpenAI)
 ├── www/
-│   └── index.html                ← CEO dashboard
+│   └── index.html               ← CEO dashboard
 ├── data/
-│   ├── leases.csv                ← PLACEHOLDER — replace with your data
-│   ├── ap.csv                    ← PLACEHOLDER
-│   ├── ar.csv                    ← PLACEHOLDER
-│   ├── gl.csv                    ← PLACEHOLDER
-│   └── market_benchmarks.csv     ← Default market rates (customise)
+│   ├── sample_leases.csv         ← Sample data (replace with your exports)
+│   ├── sample_ap.csv
+│   ├── sample_ar.csv
+│   ├── sample_gl.csv
+│   └── market_benchmarks.csv    ← Default market rates (customise)
 └── output/
-    └── .gitkeep                  ← Findings written here on run
+    └── .gitkeep                  ← Findings written here on standalone run
 ```
 
 ---
@@ -169,6 +196,7 @@ client-package/
 
 - **No data yet?** The `data/` folder includes sample files — run the agent as-is to see example findings
 - **LLM not responding?** Check your `GROQ_API_KEY` is set correctly
+- **Upload not working?** The API expects filenames: `leases.csv`, `ap.csv`, `ar.csv`, `gl.csv`, `market_benchmarks.csv`
 - **Custom thresholds?** Edit `config.py` before running
 
 ---
