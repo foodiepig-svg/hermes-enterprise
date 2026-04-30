@@ -48,22 +48,33 @@ def _format_impact(raw_impact: float, finding_type: str) -> str:
     return impact_str
 
 
-def _build_base_finding(finding: dict) -> dict:
-    """Build the base enriched finding dict from a raw finding dict."""
-    raw_impact = abs(finding.get("raw_impact", 0))
-    finding_type = finding.get("type", "Unknown")
+def _to_dict(finding) -> dict:
+    """Convert a RawFinding dataclass or dict to a plain dict."""
+    if isinstance(finding, dict):
+        return finding
+    # Handle dataclass-like objects (has __dataclass_fields__)
+    if hasattr(finding, "__dataclass_fields__"):
+        return {f: getattr(finding, f) for f in finding.__dataclass_fields__}
+    return dict(finding)
 
-    confidence = min(0.95, 0.60 + (len(finding.get("evidence", [])) * 0.07))
+
+def _build_base_finding(finding: dict) -> dict:
+    """Build the base enriched finding dict from a raw finding dict or dataclass."""
+    f = _to_dict(finding)
+    raw_impact = abs(f.get("raw_impact", 0))
+    finding_type = f.get("type", "Unknown")
+
+    confidence = min(0.95, 0.60 + (len(f.get("evidence", [])) * 0.07))
 
     return {
         "type": finding_type,
-        "entity": finding.get("entity", "—"),
-        "entity_id": finding.get("entity_id", ""),
-        "issue": finding.get("issue", ""),
+        "entity": f.get("entity", "—"),
+        "entity_id": f.get("entity_id", ""),
+        "issue": f.get("issue", ""),
         "financial_impact": _format_impact(raw_impact, finding_type),
         "confidence": f"{confidence:.0%}",
-        "evidence": finding.get("evidence", []),
-        "jde_sources": finding.get("jde_sources", []),
+        "evidence": f.get("evidence", []),
+        "jde_sources": f.get("jde_sources", []),
     }
 
 
@@ -157,9 +168,10 @@ def _mock_batch_enrichment(raw_findings: list[dict]) -> list[dict]:
     """Deterministic mock for demo / no API key."""
     results = []
     for finding in raw_findings:
-        base = _build_base_finding(finding)
-        finding_type = finding.get("type", "")
-        entity = finding.get("entity", "this entity")
+        f = _to_dict(finding)
+        base = _build_base_finding(f)
+        finding_type = f.get("type", "")
+        entity = f.get("entity", "this entity")
 
         if "lease" in finding_type.lower():
             explanation = f"{entity} shows a significant deviation from market-rate benchmarks. The current arrangement appears unfavourable relative to comparable properties in the same location and asset class."
@@ -194,7 +206,8 @@ def _mock_batch_enrichment(raw_findings: list[dict]) -> list[dict]:
 def _build_batch_prompt(raw_findings: list[dict]) -> str:
     """Build a single LLM prompt containing all raw findings."""
     findings_text = []
-    for i, f in enumerate(raw_findings, 1):
+    for i, finding in enumerate(raw_findings, 1):
+        f = _to_dict(finding)
         findings_text.append(f"""Finding {i}:
   Type: {f.get('type', 'Unknown')}
   Entity: {f.get('entity', '—')}
@@ -226,16 +239,25 @@ Findings:
 def _call_llm_batch(prompt: str) -> str | None:
     """Call the configured LLM for batch enrichment. Returns raw response or None."""
     groq_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if groq_key:
-        return _call_groq(prompt, groq_key)
+    if groq_key and groq_key not in ("", "[REDACTED]", "YOUR_KEY_HERE"):
+        try:
+            return _call_groq(prompt, groq_key)
+        except Exception as e:
+            print(f"[LLM] Groq call failed ({e}). Trying next provider...")
 
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if anthropic_key:
-        return _call_anthropic(prompt, anthropic_key)
+    if anthropic_key and anthropic_key not in ("", "[REDACTED]", "YOUR_KEY_HERE"):
+        try:
+            return _call_anthropic(prompt, anthropic_key)
+        except Exception as e:
+            print(f"[LLM] Anthropic call failed ({e}). Trying next provider...")
 
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if openai_key:
-        return _call_openai(prompt, openai_key)
+    if openai_key and openai_key not in ("", "[REDACTED]", "YOUR_KEY_HERE"):
+        try:
+            return _call_openai(prompt, openai_key)
+        except Exception as e:
+            print(f"[LLM] OpenAI call failed ({e}).")
 
     return None
 

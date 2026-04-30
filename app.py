@@ -229,7 +229,7 @@ def report():
         today = date.today().strftime('%Y%m%d')
         output_path = f'/tmp/hermes_report_{today}.pdf'
 
-        generate_pdf_report(findings, summary, output_path)
+        generate_pdf_report(findings, output_path)
 
         response = make_response(send_from_directory(
             '/tmp',

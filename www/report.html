@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- Dark-mode report: same brand, print-optimised -->
+  <link rel="stylesheet" href="print.css" />
+
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+      --high: #ef4444;
+      --high-bg: rgba(239,68,68,0.15);
+      --medium: #f59e0b;
+      --medium-bg: rgba(245,158,11,0.15);
+      --low: #10b981;
+      --low-bg: rgba(16,185,129,0.15);
+      --page-w: 210mm;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* ── Cover / Header ── */
+    .page-header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 20px 28px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .brand { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand span { color: var(--accent); }
+    .brand-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .meta { text-align: right; font-size: 11px; color: var(--text-muted); line-height: 1.8; }
+
+    /* ── KPI Strip ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      background: var(--border);
+    }
+    .kpi {
+      background: var(--surface);
+      padding: 14px 20px;
+      text-align: center;
+    }
+    .kpi-val { font-size: 24px; font-weight: 700; line-height: 1; }
+    .kpi-val.danger { color: var(--high); }
+    .kpi-val.warn { color: var(--medium); }
+    .kpi-val.ok { color: var(--low); }
+    .kpi-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      padding: 14px 28px 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    /* ── Findings table ── */
+    .findings-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .findings-table thead tr {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .findings-table th {
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .findings-table td {
+      padding: 10px 12px;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .findings-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    .urgency-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .urgency-dot.high { background: var(--high); }
+    .urgency-dot.medium { background: var(--medium); }
+    .urgency-dot.low { background: var(--low); }
+
+    .type-chip {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .impact-val { font-weight: 600; white-space: nowrap; }
+    .impact-val.high { color: var(--high); }
+    .impact-val.medium { color: var(--medium); }
+    .impact-val.low { color: var(--low); }
+
+    .excerpt { color: var(--text-muted); font-size: 11px; max-width: 260px; }
+    .recommendation { color: var(--text-muted); font-size: 11px; max-width: 220px; }
+    .jde-sources { color: var(--text-muted); font-size: 10px; font-family: monospace; }
+
+    /* ── Footer ── */
+    .page-footer {
+      padding: 10px 28px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* ── Page break handling ── */
+    @media print {
+      .findings-table { page-break-inside: auto; }
+      .findings-table tr { page-break-inside: avoid; }
+      .findings-table thead { display: table-header-group; }
+      .page-header, .page-footer { page-break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="page-header">
+  <div>
+    <div class="brand">Hermes<span>Enterprise</span></div>
+    <div class="brand-sub">Intelligence Engine — JDE ERP Financial Findings Report</div>
+  </div>
+  <div class="meta">
+    <div>Generated: <span id="gen-date"></span></div>
+    <div>Source: JD Edwards ERP</div>
+    <div>Findings: <span id="total-count">0</span></div>
+  </div>
+</div>
+
+<!-- ── KPI Strip ── -->
+<div class="kpi-strip">
+  <div class="kpi">
+    <div class="kpi-val" id="kpi-total">—</div>
+    <div class="kpi-label">Total Findings</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val danger" id="kpi-critical">—</div>
+    <div class="kpi-label">Critical / High</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val warn" id="kpi-medium">—</div>
+    <div class="kpi-label">Medium</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val ok" id="kpi-low">—</div>
+    <div class="kpi-label">Low</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val danger" id="kpi-exposure">—</div>
+    <div class="kpi-label">Total Exposure</div>
+  </div>
+</div>
+
+<!-- ── Findings ── -->
+<div class="section-title">Findings Detail</div>
+
+<table class="findings-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Urgency</th>
+      <th>Type</th>
+      <th>Entity</th>
+      <th>Financial Impact</th>
+      <th>Explanation</th>
+      <th>Recommendation</th>
+      <th>JDE Source</th>
+    </tr>
+  </thead>
+  <tbody id="findings-body"></tbody>
+</table>
+
+<!-- ── Footer ── -->
+<div class="page-footer">
+  <span>Hermes Enterprise Intelligence Layer — Deterministic Detection + Grok Reasoning Engine</span>
+  <span>Confidential — Internal Use Only</span>
+</div>
+
+<script>
+  const findings = window.__FINDINGS__ || [];
+
+  document.getElementById('gen-date').textContent = new Date().toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const high = findings.filter(f => f.urgency === 'High' || f.urgency === 'Critical').length;
+  const medium = findings.filter(f => f.urgency === 'Medium').length;
+  const low = findings.filter(f => f.urgency === 'Low').length;
+
+  let totalExp = 0;
+  findings.forEach(f => {
+    const s = f.financial_impact || '';
+    const m = s.match(/\$?([\d.]+)(M|K)?/);
+    if (m) {
+      let v = parseFloat(m[1]);
+      if (m[2] === 'M') v *= 1_000_000;
+      else if (m[2] === 'K') v *= 1_000;
+      totalExp += v;
+    }
+  });
+
+  document.getElementById('kpi-total').textContent = findings.length;
+  document.getElementById('kpi-critical').textContent = high;
+  document.getElementById('kpi-medium').textContent = medium;
+  document.getElementById('kpi-low').textContent = low;
+  document.getElementById('total-count').textContent = findings.length;
+  document.getElementById('kpi-exposure').textContent =
+    totalExp >= 1_000_000
+      ? '$' + (totalExp/1_000_000).toFixed(1) + 'M'
+      : '$' + (totalExp/1_000).toFixed(0) + 'K';
+
+  const tbody = document.getElementById('findings-body');
+  findings.forEach((f, i) => {
+    const urg = f.urgency || 'Medium';
+    const urgClass = urg.toLowerCase();
+    const impStr = f.financial_impact || '$—';
+    const impClass = urgClass === 'high' || urgClass === 'critical' ? 'high'
+                   : urgClass === 'medium' ? 'medium' : 'low';
+    const explanation = f.explanation || '—';
+    const recommendation = f.recommendation || '—';
+    const sources = (f.jde_sources || []).join(', ') || '—';
+    const type = f.type || 'Unknown';
+    const entity = f.entity || '—';
+    const evidence = (f.evidence || []).slice(0,2).join('; ') || '—';
+
+    tbody.innerHTML += `
+    <tr>
+      <td style="color:var(--text-muted);font-size:10px;">${String(i+1).padStart(3,'0')}</td>
+      <td>
+        <span class="urgency-dot ${impClass}"></span>
+        <span style="font-size:11px;">${urg}</span>
+      </td>
+      <td><span class="type-chip">${type}</span></td>
+      <td>
+        <div style="font-weight:600;">${entity}</div>
+        <div style="color:var(--text-muted);font-size:10px;margin-top:2px;">${evidence}</div>
+      </td>
+      <td><span class="impact-val ${impClass}">${impStr}</span></td>
+      <td class="excerpt" title="${explanation.replace(/"/g, '&quot;')}">${explanation}</td>
+      <td class="recommendation">${recommendation}</td>
+      <td class="jde-sources">${sources}</td>
+    </tr>`;
+  });
+</script>
+</body>
+</html>
