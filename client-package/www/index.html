@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes Enterprise — Intelligence Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+      --high: #ef4444;
+      --high-bg: #7f1d1d;
+      --medium: #f59e0b;
+      --medium-bg: #78350f;
+      --low: #10b981;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent); }
+    .badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--text-muted); }
+    .live-dot { width: 8px; height: 8px; background: var(--low); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ── KPI Strip ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi {
+      background: var(--surface);
+      padding: 28px 40px;
+      text-align: center;
+    }
+    .kpi-val { font-size: 36px; font-weight: 700; color: var(--text); line-height: 1; }
+    .kpi-val.danger { color: var(--high); }
+    .kpi-val.warn { color: var(--medium); }
+    .kpi-label { font-size: 12px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── Main layout ── */
+    .main { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 140px); }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+    }
+    .sidebar-section { padding: 0 20px 20px; }
+    .sidebar-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { background: var(--surface2); color: var(--text); }
+    .filter-btn.active { background: var(--surface2); border-color: var(--border); color: var(--text); }
+    .filter-btn .count {
+      margin-left: auto;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+    .filter-btn.active .count { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-red { background: var(--high); }
+    .dot-amber { background: var(--medium); }
+    .dot-green { background: var(--low); }
+
+    /* ── Findings feed ── */
+    .feed { padding: 32px 40px; }
+    .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .feed-title { font-size: 18px; font-weight: 600; }
+    .feed-count { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .finding-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .finding-card:hover { border-color: var(--accent); }
+    .finding-card.high { border-left: 3px solid var(--high); }
+    .finding-card.medium { border-left: 3px solid var(--medium); }
+
+    .card-top {
+      padding: 20px 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      cursor: pointer;
+    }
+    .urgency-bar {
+      width: 4px;
+      border-radius: 2px;
+      align-self: stretch;
+      min-height: 40px;
+    }
+    .urgency-bar.high { background: var(--high); }
+    .urgency-bar.medium { background: var(--medium); }
+    .urgency-bar.low { background: var(--low); }
+
+    .card-meta { flex: 1; }
+    .card-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+    .card-entity { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .card-issue { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    .card-stats { display: flex; gap: 24px; margin-top: 14px; }
+    .stat {}
+    .stat-val { font-size: 16px; font-weight: 700; }
+    .stat-val.danger { color: var(--high); }
+    .stat-val.warn { color: var(--medium); }
+    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .card-right { text-align: right; flex-shrink: 0; }
+    .confidence-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .urgency-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 10px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .urgency-tag.high { background: var(--high-bg); color: var(--high); }
+    .urgency-tag.medium { background: var(--medium-bg); color: var(--medium); }
+    .urgency-tag.low { background: #064e3b; color: var(--low); }
+
+    /* ── Expanded detail ── */
+    .card-detail {
+      display: none;
+      padding: 0 24px 20px 24px;
+      border-top: 1px solid var(--border);
+      margin-top: 0;
+    }
+    .card-detail.open { display: block; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 20px; }
+    .detail-section {}
+    .detail-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px; }
+    .detail-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .detail-text em { color: var(--accent); font-style: normal; }
+
+    .evidence-list { list-style: none; }
+    .evidence-list li { font-size: 12px; color: var(--text-muted); padding: 5px 0; border-bottom: 1px solid var(--surface2); display: flex; gap: 8px; }
+    .evidence-list li:last-child { border-bottom: none; }
+    .evidence-list li::before { content: '▸'; color: var(--accent); flex-shrink: 0; }
+
+    .recommendation-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    .rec-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+    .rec-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+    .sources-row { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .source-chip { font-size: 11px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 80px 40px; color: var(--text-muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 80px; color: var(--text-muted); font-size: 14px; }
+
+    /* ── Footer ── */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 14px 40px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; }
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Hermes<span>Enterprise</span></div>
+  <span class="badge">Intelligence Engine</span>
+  <div class="header-right">
+    <span><span class="live-dot"></span> Live</span>
+    <span id="timestamp"></span>
+  </div>
+</header>
+
+<div class="kpi-strip">
+  <div class="kpi">
+    <div class="kpi-val" id="kpi-total">—</div>
+    <div class="kpi-label">Total Findings</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val danger" id="kpi-high">—</div>
+    <div class="kpi-label">High Urgency</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val" id="kpi-medium">—</div>
+    <div class="kpi-label">Medium Urgency</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val warn" id="kpi-exposure">—</div>
+    <div class="kpi-label">Financial Exposure</div>
+  </div>
+</div>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Filter by Urgency</div>
+      <button class="filter-btn active" data-filter="all">
+        All Findings
+        <span class="count" id="count-all">0</span>
+      </button>
+      <button class="filter-btn" data-filter="High">
+        <span class="dot dot-red"></span> High
+        <span class="count" id="count-high">0</span>
+      </button>
+      <button class="filter-btn" data-filter="Medium">
+        <span class="dot dot-amber"></span> Medium
+        <span class="count" id="count-medium">0</span>
+      </button>
+      <button class="filter-btn" data-filter="Low">
+        <span class="dot dot-green"></span> Low
+        <span class="count" id="count-low">0</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Filter by Type</div>
+      <div id="type-filters"></div>
+    </div>
+    <div class="sidebar-section" style="margin-top:auto; padding-top:20px; border-top: 1px solid var(--border);">
+      <div class="sidebar-title">Data Sources</div>
+      <div style="font-size:12px; color: var(--text-muted); line-height: 1.8;">
+        <div>🗄 F1501 — Lease Master</div>
+        <div>🗄 F1502 — Lease Terms</div>
+        <div>🗄 F0411 — Accounts Payable</div>
+        <div>🗄 F0911 — General Ledger</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="feed">
+    <div class="feed-header">
+      <div>
+        <div class="feed-title">Findings</div>
+        <div class="feed-count" id="feed-count">Loading...</div>
+      </div>
+    </div>
+    <div id="findings-container">
+      <div class="loading">Running analysis...</div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <span>Hermes Enterprise Intelligence Layer — JDE ERP Integration</span>
+  <span>Deterministic Detection + Grok Reasoning Engine</span>
+</footer>
+
+<script>
+  // ── State ──
+  let allFindings = [];
+  let activeFilter = 'all';
+  let activeTypeFilter = 'all';
+
+  // ── Load findings ──
+  async function loadFindings() {
+    try {
+      const res = await fetch('../output/findings.json');
+      if (!res.ok) throw new Error('No findings file found');
+      allFindings = await res.json();
+      renderAll();
+    } catch (e) {
+      document.getElementById('findings-container').innerHTML =
+        `<div class="empty"><div class="empty-icon">📭</div>No findings yet. Run the agent first:<br><br><code style="background:var(--surface2);padding:8px 16px;border-radius:6px;font-size:13px;">python3.11 hermes_agent.py</code></div>`;
+      document.getElementById('feed-count').textContent = 'No data';
+    }
+  }
+
+  // ── KPI rendering ──
+  function renderKPIs() {
+    const high = allFindings.filter(f => f.urgency === 'High').length;
+    const medium = allFindings.filter(f => f.urgency === 'Medium').length;
+    const low = allFindings.filter(f => f.urgency === 'Low').length;
+
+    // Parse total exposure
+    let totalExp = 0;
+    allFindings.forEach(f => {
+      const s = f.financial_impact || '';
+      const m = s.match(/\$?([\d.]+)(M|K)?/);
+      if (m) {
+        let v = parseFloat(m[1]);
+        if (m[2] === 'M') v *= 1_000_000;
+        else if (m[2] === 'K') v *= 1_000;
+        totalExp += v;
+      }
+    });
+    const expStr = totalExp >= 1_000_000
+      ? '$' + (totalExp/1_000_000).toFixed(1) + 'M'
+      : '$' + (totalExp/1_000).toFixed(0) + 'K';
+
+    document.getElementById('kpi-total').textContent = allFindings.length;
+    document.getElementById('kpi-high').textContent = high;
+    document.getElementById('kpi-medium').textContent = medium;
+    document.getElementById('kpi-exposure').textContent = expStr;
+  }
+
+  // ── Sidebar filters ──
+  function renderSidebarFilters() {
+    const counts = { all: allFindings.length, High: 0, Medium: 0, Low: 0 };
+    const types = {};
+    allFindings.forEach(f => {
+      counts[f.urgency] = (counts[f.urgency] || 0) + 1;
+      types[f.type] = (types[f.type] || 0) + 1;
+    });
+
+    // Update urgency counts
+    ['all','high','medium','low'].forEach(k => {
+      const el = document.getElementById('count-' + k);
+      if (el) el.textContent = counts[k === 'all' ? 'all' : k.charAt(0).toUpperCase() + k.slice(1)] || 0;
+    });
+
+    // Render type filters
+    const container = document.getElementById('type-filters');
+    container.innerHTML = '';
+    Object.entries(types).forEach(([type, count]) => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn' + (activeTypeFilter === type ? ' active' : '');
+      btn.dataset.type = type;
+      btn.innerHTML = `${type} <span class="count">${count}</span>`;
+      btn.onclick = () => {
+        activeTypeFilter = activeTypeFilter === type ? 'all' : type;
+        renderAll();
+        document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+        if (activeTypeFilter !== 'all') btn.classList.add('active');
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  // ── Card HTML ──
+  function renderCard(f, i) {
+    const urg = f.urgency || 'Medium';
+    const urgencyClass = urg.toLowerCase();
+    const impactStr = f.financial_impact || '$—';
+    const hasDetail = f.explanation || f.recommendation || (f.evidence && f.evidence.length);
+
+    return `
+    <div class="finding-card ${urgencyClass}" data-urgency="${urg}" data-type="${f.type || ''}" id="card-${i}">
+      <div class="card-top" onclick="toggleCard(${i})">
+        <div class="urgency-bar ${urgencyClass}"></div>
+        <div class="card-meta">
+          <div class="card-type">${f.type || 'Unknown'}</div>
+          <div class="card-entity">${f.entity || '—'}</div>
+          <div class="card-issue">${f.issue || '—'}</div>
+          <div class="card-stats">
+            <div class="stat">
+              <div class="stat-val ${urgencyClass === 'high' ? 'danger' : 'warn'}">${impactStr}</div>
+              <div class="stat-label">Financial Impact</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">${f.confidence || '—'}</div>
+              <div class="stat-label">Confidence</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">${f.owner || '—'}</div>
+              <div class="stat-label">Owner</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="confidence-badge">${f.confidence || '—'}</div>
+          <div class="urgency-tag ${urgencyClass}">${urg}</div>
+        </div>
+      </div>
+      ${hasDetail ? `
+      <div class="card-detail" id="detail-${i}">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <div class="detail-section-title">📖 Explanation</div>
+            <div class="detail-text">${f.explanation || 'No explanation available.'}</div>
+          </div>
+          <div>
+            <div class="detail-section-title">📋 Evidence</div>
+            <ul class="evidence-list">
+              ${(f.evidence || []).map(e => `<li>${e}</li>`).join('')}
+            </ul>
+            ${f.jde_sources && f.jde_sources.length ? `
+              <div class="sources-row">
+                ${f.jde_sources.map(s => `<span class="source-chip">${s}</span>`).join('')}
+              </div>` : ''}
+            </div>
+          </div>
+        </div>
+        ${f.recommendation ? `
+        <div class="recommendation-box">
+          <div class="rec-label">✅ Recommended Action</div>
+          <div class="rec-text">${f.recommendation}</div>
+          ${f.expected_outcome ? `<div style="margin-top:8px;font-size:12px;color:var(--text-muted);">Expected: ${f.expected_outcome}</div>` : ''}
+        </div>` : ''}
+      </div>` : ''}
+    </div>`;
+  }
+
+  function toggleCard(i) {
+    const detail = document.getElementById('detail-' + i);
+    if (!detail) return;
+    detail.classList.toggle('open');
+  }
+
+  // ── Render all ──
+  function renderAll() {
+    renderKPIs();
+    renderSidebarFilters();
+
+    const filtered = allFindings.filter(f => {
+      const urgMatch = activeFilter === 'all' || f.urgency === activeFilter;
+      const typeMatch = activeTypeFilter === 'all' || f.type === activeTypeFilter;
+      return urgMatch && typeMatch;
+    });
+
+    document.getElementById('feed-count').textContent =
+      `${filtered.length} of ${allFindings.length} findings`;
+
+    const container = document.getElementById('findings-container');
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>No findings match this filter.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map((f, i) => renderCard(f, i)).join('');
+  }
+
+  // ── Urgency filter buttons ──
+  document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFilter = btn.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    });
+  });
+
+  // ── Init ──
+  document.getElementById('timestamp').textContent = new Date().toLocaleString();
+  loadFindings();
+</script>
+</body>
+</html>

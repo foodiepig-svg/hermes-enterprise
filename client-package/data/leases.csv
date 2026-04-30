@@ -1,0 +1,11 @@
+lease_id,property_id,property_name,location,tenant,asset_type,area_sqm,lease_start,lease_end,rent_per_sqm,annual_rent,escalation_pct,status
+L-1501-A,Collins_Tower_01,Collins St Tower - Unit 8A,Melbourne CBD,Acme Corp,Office,850,2022-01-01,2027-12-31,78.50,66725.00,3.0,Active
+L-1501-B,Collins_Tower_02,Collins St Tower - Unit 12B,Melbourne CBD,TechStart Pty Ltd,Office,1200,2021-07-01,2026-06-30,80.00,96000.00,2.5,Active
+L-1501-C,South_Yarra_01,South Yarra Offices - Suite 3,South Yarra,Legal Partners JV,Office,420,2023-03-01,2028-02-28,92.00,38640.00,3.5,Active
+L-1501-D,Richmond_01,Richmond Industrial - Unit 5,Richmond,LogiCo Ltd,Industrial,2500,2020-06-01,2025-05-31,45.00,112500.00,2.0,Expiring Soon
+L-1501-E,Collins_Tower_03,Collins St Tower - Unit 20C,Melbourne CBD,Audit Partners,Office,620,2019-01-01,2024-12-31,75.00,46500.00,3.0,Expired
+L-1501-F,Docklands_01,Docklands Precinct - Suite 100,Docklands,FinServ Group,Office,1800,2022-09-01,2027-08-31,88.00,158400.00,3.0,Active
+L-1501-G,Richmond_02,Richmond Industrial - Unit 12,Richmond,PackRight Pty Ltd,Industrial,1800,2021-03-01,2026-02-28,48.00,86400.00,2.5,Active
+L-1501-H,South_Yarra_02,South Yarra Offices - Level 2,South Yarra,MedHealth Ltd,Office,750,2023-06-01,2029-05-31,95.00,71250.00,3.0,Active
+L-1501-I,Collins_Tower_04,Collins St Tower - Unit 3B,Melbourne CBD,StartupXYZ,Office,380,2024-01-01,2026-12-31,82.00,31160.00,3.0,Active
+L-1501-J,Richmond_03,Richmond Industrial - Unit 8,Richmond,FreightPlus,Industrial,3200,2018-07-01,2023-06-30,42.00,134400.00,2.0,Expired

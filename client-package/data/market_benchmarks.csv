@@ -1,0 +1,8 @@
+location,asset_type,market_rate_sqm,benchmark_date,data_source
+Melbourne CBD,Office,95.00,2024-06-01,Market Analytics AU
+South Yarra,Office,90.00,2024-06-01,Market Analytics AU
+Richmond,Industrial,58.00,2024-06-01,Market Analytics AU
+Docklands,Office,92.00,2024-06-01,Market Analytics AU
+Melbourne CBD,Industrial,65.00,2024-06-01,Market Analytics AU
+South Yarra,Retail,110.00,2024-06-01,Market Analytics AU
+Richmond,Office,82.00,2024-06-01,Market Analytics AU
