@@ -11,7 +11,7 @@ Deterministic first, AI second — LLM only handles narrative.
 import json
 import os
 import re
-from dataclasses import dataclass
+from typing import Any
 
 
 LLM_SYSTEM_PROMPT = """You are a senior financial analyst working for an enterprise asset management firm.
@@ -24,65 +24,82 @@ Rules:
 - Flag urgency appropriately: High (< 30 days), Medium (30-90 days), Low (> 90 days)
 - Do not speculate — only use the evidence provided
 - If the evidence is insufficient to make a determination, say so
+- Output valid JSON only — no markdown, no preamble, no commentary
 """
 
 
-def build_explain_prompt(finding: dict) -> str:
-    return f"""Explain this financial finding in simple, direct business language.
+def _format_impact(raw_impact: float, finding_type: str) -> str:
+    """Format financial impact string from raw float."""
+    abs_impact = abs(raw_impact)
+    if abs_impact >= 1_000_000:
+        impact_str = f"${abs_impact/1_000_000:.1f}M"
+    elif abs_impact >= 1_000:
+        impact_str = f"${abs_impact/1_000:.0f}K"
+    else:
+        impact_str = f"${abs_impact:,.2f}"
 
-Finding:
-- Type: {finding['type']}
-- Entity: {finding['entity']}
-- Issue: {finding['issue']}
-- Evidence: {', '.join(finding['evidence'])}
-- Raw financial impact: ${abs(finding['raw_impact']):,.2f}{' potential loss' if finding['raw_impact'] > 0 else ' overpayment'}
+    if finding_type in ("Lease Underpricing", "Lease Expiry — Already Expired", "Lease Expiry Risk"):
+        impact_str += " annual upside at risk"
+    elif "Duplicate" in finding_type:
+        impact_str += " potential duplicate payment"
+    elif "Spike" in finding_type:
+        impact_str += " above median"
 
-Provide:
-1. Plain-English summary (2 sentences max)
-2. Why this matters to the business (1 sentence)
-3. Key evidence supporting this finding (bullet points)
-"""
-
-
-def build_recommend_prompt(finding: dict) -> str:
-    return f"""Based on this financial finding, provide a clear, actionable recommendation.
-
-Finding:
-- Type: {finding['type']}
-- Entity: {finding['entity']}
-- Issue: {finding['issue']}
-- Evidence: {', '.join(finding['evidence'])}
-- Raw financial impact: ${abs(finding['raw_impact']):,.2f}{' potential loss' if finding['raw_impact'] > 0 else ' overpayment'}
-
-Output a JSON object with exactly this structure:
-{{
-  "action": "What to do (imperative, specific)",
-  "expected_outcome": "What success looks like",
-  "urgency": "High|Medium|Low",
-  "owner": "Who should handle this (Finance / Asset Manager / Legal / etc.)"
-}}
-"""
+    return impact_str
 
 
-def call_llm(prompt: str, model: str = "auto") -> str:
-    """Call the configured LLM. Supports Groq, Anthropic, or OpenAI. Falls back to mock."""
-    # Check Groq first (fastest, cheapest)
-    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if groq_key:
-        return _call_groq(prompt, groq_key)
+def _build_base_finding(finding: dict) -> dict:
+    """Build the base enriched finding dict from a raw finding dict."""
+    raw_impact = abs(finding.get("raw_impact", 0))
+    finding_type = finding.get("type", "Unknown")
 
-    # Check Anthropic
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if anthropic_key:
-        return _call_anthropic(prompt, anthropic_key)
+    confidence = min(0.95, 0.60 + (len(finding.get("evidence", [])) * 0.07))
 
-    # Check OpenAI
-    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if openai_key:
-        return _call_openai(prompt, openai_key)
+    return {
+        "type": finding_type,
+        "entity": finding.get("entity", "—"),
+        "entity_id": finding.get("entity_id", ""),
+        "issue": finding.get("issue", ""),
+        "financial_impact": _format_impact(raw_impact, finding_type),
+        "confidence": f"{confidence:.0%}",
+        "evidence": finding.get("evidence", []),
+        "jde_sources": finding.get("jde_sources", []),
+    }
 
-    return _mock_llm_response(prompt)
 
+def _extract_json_array(text: str) -> list | None:
+    """Extract a JSON array from LLM response text."""
+    text = text.strip()
+    # Try direct JSON parse first
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+    # Try to find array bounds
+    arr_start = text.find("[")
+    arr_end = text.rfind("]")
+    if arr_start != -1 and arr_end != -1:
+        try:
+            return json.loads(text[arr_start:arr_end+1])
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
+def _parse_enrichment(data: dict, base: dict) -> dict:
+    """Parse LLM enrichment data into the base finding."""
+    result = base.copy()
+    result["explanation"] = data.get("explanation", "No explanation generated.")
+    result["recommendation"] = data.get("recommendation", data.get("action", "Review and act on this finding."))
+    result["expected_outcome"] = data.get("expected_outcome", "Reduce financial risk.")
+    result["urgency"] = data.get("urgency", "Medium")
+    result["owner"] = data.get("owner", "Finance Team")
+    return result
+
+
+# ─── Provider calls ───────────────────────────────────────────────────────────
 
 def _call_groq(prompt: str, api_key: str) -> str:
     """Call Groq API (fast, cheap, supports Llama/Mixtral)."""
@@ -95,7 +112,7 @@ def _call_groq(prompt: str, api_key: str) -> str:
             {"role": "system", "content": LLM_SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
         ],
-        max_tokens=1024,
+        max_tokens=4096,
         temperature=0.3,
     )
     return response.choices[0].message.content
@@ -112,7 +129,7 @@ def _call_anthropic(prompt: str, api_key: str) -> str:
     )
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=1024,
+        max_tokens=4096,
         system=LLM_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -130,104 +147,145 @@ def _call_openai(prompt: str, api_key: str) -> str:
             {"role": "system", "content": LLM_SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
         ],
-        max_tokens=1024,
+        max_tokens=4096,
         temperature=0.3,
     )
     return response.choices[0].message.content
 
 
-def _mock_llm_response(prompt: str) -> str:
-    """Deterministic mock responses for demo mode."""
-    if "recommend" in prompt.lower() or "action" in prompt.lower():
-        return json.dumps({
-            "action": "Review lease file and initiate renegotiation discussion with tenant",
-            "expected_outcome": "Align rent to market rate at next renewal or sooner if break clause available",
-            "urgency": "High",
-            "owner": "Asset Manager"
-        })
-    elif "explain" in prompt.lower():
-        return "This lease is being rented significantly below current market rates for comparable properties in the same location. The tenant is benefiting from a favourable deal while the portfolio is underperforming. Rectifying this gap would improve portfolio income materially."
-    return "Unable to generate explanation."
+def _mock_batch_enrichment(raw_findings: list[dict]) -> list[dict]:
+    """Deterministic mock for demo / no API key."""
+    results = []
+    for finding in raw_findings:
+        base = _build_base_finding(finding)
+        finding_type = finding.get("type", "")
+        entity = finding.get("entity", "this entity")
+
+        if "lease" in finding_type.lower():
+            explanation = f"{entity} shows a significant deviation from market-rate benchmarks. The current arrangement appears unfavourable relative to comparable properties in the same location and asset class."
+            recommendation = f"Arrange a portfolio review meeting with the tenant 90 days before lease expiry. Target market-rate alignment at renewal, supported by a formal rent Comparable analysis."
+        elif "duplicate" in finding_type.lower():
+            explanation = f"A payment matching {entity} was identified. The payment profile suggests a possible duplicate that warrants immediate reconciliation review."
+            recommendation = f"Freeze payment run for this vendor. Finance team to reconcile {entity} against prior periods within 48 hours before any further payments are approved."
+        elif "ar" in finding_type.lower() or "collection" in finding_type.lower():
+            explanation = f"{entity} has invoices that are significantly overdue. Extended delays in collection erode working capital and may signal broader customer distress."
+            recommendation = f"Initiate a formal collections process. Escalate to senior management if payment is not received within 14 days."
+        elif "vendor" in finding_type.lower() or "concentration" in finding_type.lower():
+            explanation = f"{entity} represents a disproportionate share of total AP spend. Concentration risk increases exposure to supply chain disruption if this vendor encounters financial difficulty."
+            recommendation = f"Diversify vendor relationships where possible. Review the commercial rationale for concentration and assess whether contractual protections are in place."
+        elif "early" in finding_type.lower() or "payment" in finding_type.lower():
+            explanation = f"{entity} was paid ahead of schedule. Early payments may indicate manual overrides in the accounts payable workflow and could represent missed float benefits."
+            recommendation = f"Review the payment approval workflow for this vendor. Confirm whether early payments are intentional or indicate a process deviation."
+        else:
+            explanation = f"{entity} was flagged by the detection engine. Further investigation is recommended to determine root cause and appropriate action."
+            recommendation = "Review the finding in the Hermes dashboard. Escalate to the appropriate team based on the finding type."
+
+        result = base.copy()
+        result["explanation"] = explanation
+        result["recommendation"] = recommendation
+        result["expected_outcome"] = "Reduce financial risk and improve operational efficiency."
+        result["urgency"] = "High" if "duplicate" in finding_type.lower() else "Medium"
+        result["owner"] = "Finance Team"
+        results.append(result)
+
+    return results
 
 
-def extract_json(text: str) -> dict | None:
-    """Extract JSON from LLM response."""
-    # Try to find JSON block
-    match = re.search(r"\{[^{}]*\}", text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
-    # Try whole text
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        return None
+def _build_batch_prompt(raw_findings: list[dict]) -> str:
+    """Build a single LLM prompt containing all raw findings."""
+    findings_text = []
+    for i, f in enumerate(raw_findings, 1):
+        findings_text.append(f"""Finding {i}:
+  Type: {f.get('type', 'Unknown')}
+  Entity: {f.get('entity', '—')}
+  Issue: {f.get('issue', '—')}
+  Evidence: {', '.join(f.get('evidence', []) or ['No evidence'])}
+  Financial impact: ${abs(f.get('raw_impact', 0)):,.2f}
+  JDE Sources: {', '.join(f.get('jde_sources', []) or ['None'])}""")
+
+    findings_block = "\n\n".join(findings_text)
+
+    return f"""You are processing {len(raw_findings)} financial findings from an enterprise intelligence engine.
+
+For EACH finding, generate an enrichment with exactly these fields:
+- explanation: Plain-English description (2-3 sentences) explaining what this finding means and why it matters
+- recommendation: Specific, actionable next step (1-2 sentences, imperative mood)
+- urgency: High / Medium / Low — based on financial impact and time sensitivity
+- owner: Which team should own this (e.g. Finance Team, Asset Manager, Legal, Operations)
+
+Return a JSON array with {len(raw_findings)} objects — one per finding, in the same order as provided.
+Each object must have: explanation, recommendation, urgency, owner
+
+Do not include any text outside the JSON array.
+
+Findings:
+{findings_block}
+"""
 
 
-def enrich_finding(finding: dict) -> dict:
-    """Enrich a raw finding with LLM explanation and recommendation."""
-    # Build prompts
-    explain_prompt = build_explain_prompt(finding)
-    recommend_prompt = build_recommend_prompt(finding)
+def _call_llm_batch(prompt: str) -> str | None:
+    """Call the configured LLM for batch enrichment. Returns raw response or None."""
+    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if groq_key:
+        return _call_groq(prompt, groq_key)
 
-    # Call LLM (or mock)
-    explanation = call_llm(explain_prompt)
-    recommendation_text = call_llm(recommend_prompt)
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if anthropic_key:
+        return _call_anthropic(prompt, anthropic_key)
 
-    # Parse recommendation JSON
-    rec_data = extract_json(recommendation_text)
+    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if openai_key:
+        return _call_openai(prompt, openai_key)
 
-    # Calculate confidence based on evidence quality
-    evidence_count = len(finding.get("evidence", []))
-    confidence = min(0.95, 0.60 + (evidence_count * 0.07))
+    return None
 
-    # Determine urgency from raw finding type
-    urgency = "Medium"
-    if finding["type"] in ("Lease Expiry — Already Expired", "Duplicate Payment Risk"):
-        urgency = "High"
-    elif "Expiring Soon" in finding.get("status", "") or "Expired" in finding.get("status", ""):
-        urgency = "High"
-    elif finding["type"] == "Vendor Payment Spike":
-        urgency = "Medium"
 
-    if rec_data and rec_data.get("urgency"):
-        urgency = rec_data["urgency"]
-
-    # Format financial impact
-    raw = abs(finding["raw_impact"])
-    if raw >= 1_000_000:
-        impact_str = f"${raw/1_000_000:.1f}M"
-    elif raw >= 1_000:
-        impact_str = f"${raw/1_000:.0f}K"
-    else:
-        impact_str = f"${raw:,.2f}"
-
-    if finding["type"] in ("Lease Underpricing", "Lease Expiry — Already Expired", "Lease Expiry Risk"):
-        impact_str += " annual upside at risk"
-    elif "Duplicate" in finding["type"]:
-        impact_str += " potential duplicate payment"
-    elif "Spike" in finding["type"]:
-        impact_str += " above median"
-
-    return {
-        "type": finding["type"],
-        "entity": finding["entity"],
-        "entity_id": finding["entity_id"],
-        "issue": finding["issue"],
-        "financial_impact": impact_str,
-        "confidence": f"{confidence:.0%}",
-        "evidence": finding.get("evidence", []),
-        "explanation": explanation,
-        "recommendation": rec_data.get("action", "Review and act on this finding") if rec_data else "Review and act on this finding",
-        "expected_outcome": rec_data.get("expected_outcome", "Reduce financial risk") if rec_data else "Reduce financial risk",
-        "urgency": urgency,
-        "owner": rec_data.get("owner", "Finance Team") if rec_data else "Finance Team",
-        "jde_sources": finding.get("jde_sources", []),
-    }
-
+# ─── Public API ───────────────────────────────────────────────────────────────
 
 def enrich_findings(raw_findings: list[dict]) -> list[dict]:
-    """Enrich all findings. Returns enriched list."""
-    return [enrich_finding(f) for f in raw_findings]
+    """
+    Enrich all raw findings with LLM-generated explanation and recommendations.
+
+    Uses BATCH processing — all findings sent in a single LLM call for speed.
+    Falls back to mock enrichment if no API key is configured.
+
+    Args:
+        raw_findings: List of raw finding dicts from detection layer.
+                     Each should have: type, entity, entity_id, issue, evidence,
+                     raw_impact, jde_sources.
+
+    Returns:
+        List of enriched finding dicts with explanation, recommendation,
+        urgency, owner, expected_outcome fields added.
+    """
+    if not raw_findings:
+        return []
+
+    # Build base findings (without LLM content) for all items
+    base_findings = [_build_base_finding(f) for f in raw_findings]
+
+    # Try batch LLM call
+    prompt = _build_batch_prompt(raw_findings)
+    response = _call_llm_batch(prompt)
+
+    if response:
+        enrichment_data = _extract_json_array(response)
+        if enrichment_data and len(enrichment_data) == len(raw_findings):
+            return [
+                _parse_enrichment(enrichment_data[i], base_findings[i])
+                for i in range(len(raw_findings))
+            ]
+        else:
+            print(f"[LLM] Failed to parse batch response ({len(enrichment_data) if enrichment_data else 0} items, expected {len(raw_findings)}). Falling back to mock.")
+    else:
+        print("[LLM] No API key configured. Using mock enrichment.")
+
+    # Fallback: mock enrichment
+    return _mock_batch_enrichment(raw_findings)
+
+
+# ─── Single-finding enrichment (kept for backward compatibility) ───────────────
+
+def enrich_finding(finding: dict) -> dict:
+    """Enrich a single finding. Wrapper around enrich_findings for backward compat."""
+    return enrich_findings([finding])[0]

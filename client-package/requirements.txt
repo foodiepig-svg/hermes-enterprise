@@ -3,3 +3,4 @@ groq>=0.4.0
 lxml>=4.9.0
 flask>=3.0.0
 flask-cors>=6.0.0
+reportlab>=4.0.0

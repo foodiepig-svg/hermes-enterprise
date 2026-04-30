@@ -1,12 +1,13 @@
 """
 Hermes Enterprise — Flask API Server
-Handles CSV upload, runs detection, returns findings + summary.
+Handles CSV upload, runs detection, returns findings + summary + PDF report.
 """
 
 import os
 import tempfile
 import shutil
-from flask import Flask, request, jsonify, send_from_directory
+from datetime import date
+from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import json
 from pathlib import Path
@@ -18,8 +19,6 @@ from detection.detection_engine import (
     detect_lease_opportunities,
     detect_lease_expiry_risk,
     detect_ap_anomalies,
-    run_detection as run_core_detection,
-    RawFinding,
 )
 from detection.ap_ar_gl import (
     load_ar_transactions,
@@ -30,28 +29,13 @@ from detection.ap_ar_gl import (
 )
 from detection.ap_extended import run_ap_extended
 from reasoning.llm_reasoning import enrich_findings
+from output.report_generator import generate_pdf_report
 
 app = Flask(__name__, static_folder='www', static_url_path='')
 CORS(app)
 
-DETECTION_FILES = {
-    'leases': 'data/sample_leases.csv',
-    'ap': 'data/sample_ap.csv',
-    'ar': 'data/sample_ar.csv',
-    'gl': 'data/sample_gl.csv',
-    'market_benchmarks': 'data/market_benchmarks.csv',
-}
 
-
-def parse_float(val):
-    """Safely parse a float from a string or number."""
-    if val is None or val == '':
-        return 0.0
-    try:
-        return float(str(val).replace(',', '').replace('$', '').strip())
-    except (ValueError, AttributeError):
-        return 0.0
-
+# ─── Detection pipeline ───────────────────────────────────────────────────────
 
 def run_detection(data_dir: str = None) -> list:
     """Run all detection layers on the data directory."""
@@ -78,7 +62,7 @@ def run_detection(data_dir: str = None) -> list:
     # Layer 3: Vendor risk
     findings.extend(run_ap_extended(os.path.join(data_dir, 'sample_ap.csv')))
 
-    # Layer 4: LLM enrichment
+    # Layer 4: LLM enrichment (batch — all findings in one call)
     findings = enrich_findings(findings)
 
     return findings
@@ -109,12 +93,23 @@ def make_summary(findings: list) -> dict:
         # Parse financial impact
         impact_str = f.get('financial_impact', '')
         if impact_str:
-            val = parse_float(impact_str)
-            # Handle "$XK" or "$XM" format
-            if 'K' in str(impact_str).upper():
-                val *= 1_000
-            elif 'M' in str(impact_str).upper():
-                val *= 1_000_000
+            val = 0.0
+            s = str(impact_str).replace('$', '').replace(',', '').strip()
+            if 'K' in s.upper():
+                try:
+                    val = float(s.upper().replace('K', '').split()[0]) * 1_000
+                except (ValueError, IndexError):
+                    pass
+            elif 'M' in s.upper():
+                try:
+                    val = float(s.upper().replace('M', '').split()[0]) * 1_000_000
+                except (ValueError, IndexError):
+                    pass
+            else:
+                try:
+                    val = float(s.split()[0].replace(',', ''))
+                except (ValueError, IndexError):
+                    pass
             total_exposure += val
 
     # Sort by urgency then confidence
@@ -122,7 +117,7 @@ def make_summary(findings: list) -> dict:
     sorted_findings = sorted(
         findings,
         key=lambda f: (urgency_order.get(f.get('urgency', 'medium'), 9),
-                       -(f.get('confidence', 0) or 0))
+                       -(float(str(f.get('confidence', '0%')).replace('%', '')) / 100 if f.get('confidence') else 0))
     )
 
     return {
@@ -134,7 +129,7 @@ def make_summary(findings: list) -> dict:
     }
 
 
-# ── API Routes ──────────────────────────────────────────────────────────────
+# ─── API Routes ──────────────────────────────────────────────────────────────
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
@@ -150,11 +145,9 @@ def analyze():
     upload_dir = None
 
     try:
-        # Handle file uploads
         if request.files:
             upload_dir = tempfile.mkdtemp(prefix='hermes_upload_')
 
-            # Map client filenames to expected internal names
             FILE_MAP = {
                 'leases.csv': 'sample_leases.csv',
                 'ap.csv': 'sample_ap.csv',
@@ -170,7 +163,6 @@ def analyze():
                     mapped = FILE_MAP.get(fname, fname)
                     f.save(os.path.join(upload_dir, mapped))
 
-            # Also handle generic 'files' field with multiple files
             if 'files' in request.files:
                 for f in request.files.getlist('files'):
                     name = f.filename or 'data.csv'
@@ -178,7 +170,6 @@ def analyze():
                         mapped = FILE_MAP.get(name, name)
                         f.save(os.path.join(upload_dir, mapped))
 
-            # Handle raw CSV text fields
             for key in ['leases', 'ap', 'ar', 'gl', 'market_benchmarks']:
                 if key in request.form and request.form[key]:
                     with open(os.path.join(upload_dir, f'{key}.csv'), 'w') as out:
@@ -186,7 +177,6 @@ def analyze():
 
             findings = run_detection(upload_dir)
         else:
-            # No files uploaded — use built-in sample data
             findings = run_detection()
 
         summary = make_summary(findings)
@@ -211,16 +201,48 @@ def analyze():
 
 @app.route('/api/summary', methods=['GET'])
 def summary():
-    """Return summary of latest run (or sample data)."""
+    """Return executive summary from sample data."""
     findings = run_detection()
     return jsonify(make_summary(findings))
 
 
 @app.route('/api/findings', methods=['GET'])
 def get_findings():
-    """Return all findings from latest run."""
+    """Return all findings from sample data."""
     findings = run_detection()
     return jsonify(findings)
+
+
+@app.route('/api/report', methods=['GET'])
+def report():
+    """
+    Generate and download a PDF intelligence report.
+
+    Uses sample data. For custom data, POST to /api/analyze first.
+
+    Returns: PDF file as application/octet-stream attachment.
+    """
+    try:
+        findings = run_detection()
+        summary = make_summary(findings)
+
+        today = date.today().strftime('%Y%m%d')
+        output_path = f'/tmp/hermes_report_{today}.pdf'
+
+        generate_pdf_report(findings, summary, output_path)
+
+        response = make_response(send_from_directory(
+            '/tmp',
+            f'hermes_report_{today}.pdf',
+            as_attachment=True,
+            download_name=f'hermes_report_{today}.pdf'
+        ))
+        response.headers['Content-Type'] = 'application/pdf'
+        return response
+
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
 
 
 @app.route('/api/health', methods=['GET'])
@@ -228,7 +250,7 @@ def health():
     return jsonify({'status': 'ok', 'version': '1.0.0'})
 
 
-# ── Dashboard ───────────────────────────────────────────────────────────────
+# ─── Dashboard ───────────────────────────────────────────────────────────────
 
 @app.route('/')
 def index():

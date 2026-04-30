@@ -118,10 +118,11 @@
 
 ### `reasoning/llm_reasoning.py`
 - Function: `enrich_findings(findings)` — takes raw findings, returns enriched
-- Uses Groq by default, falls back to Anthropic → OpenAI → mock
-- Rate limiting: 30 req/min on Groq free tier
+- **Batch processing:** all findings passed in ONE LLM call (single prompt, single response)
+- Provider fallback: Groq → Anthropic → OpenAI → mock
+- Mock fallback if no API key or batch parse fails
 - Timeout: 30s per call
-- Batching: currently individual calls (see Roadmap: batch LLM)
+- System prompt: senior financial analyst persona, JSON-only output
 
 ### `www/index.html` — CEO Dashboard
 - Single-page HTML/JS application
@@ -129,6 +130,14 @@
 - No build step, no framework — vanilla JS
 - Auto-populates: KPI strip, sidebar type filters, finding cards
 - Filter state managed in JS memory (no URL params)
+
+### `output/report_generator.py`
+- Function: `generate_pdf_report(findings, summary, output_path)` → PDF file path
+- Uses ReportLab PLATYPUS for professional layout
+- Dark-themed content matching the dashboard aesthetic
+- Sections: header with title + date, KPI strip, findings detail table
+- Urgency colour coding: critical=red, high=red, medium=amber, low=green
+- Truncates long text fields for table layout
 
 ### `config.py` — Detection Thresholds
 - All numeric thresholds centralised here

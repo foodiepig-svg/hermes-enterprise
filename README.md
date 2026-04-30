@@ -76,6 +76,7 @@ python3.11 app.py
 | `POST` | `/api/analyze` | Upload CSVs + run detection, returns findings + summary |
 | `GET` | `/api/summary` | Run detection on sample data, return executive summary |
 | `GET` | `/api/findings` | Run detection on sample data, return all findings |
+| `GET` | `/api/report` | Generate and download PDF intelligence report |
 | `GET` | `/api/health` | Health check |
 
 ### Upload Format

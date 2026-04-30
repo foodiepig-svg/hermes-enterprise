@@ -64,7 +64,7 @@ Every raw finding is enriched with:
 - **recommendation** — specific next step (who to talk to, what to check, when to act)
 
 **Provider priority:** Groq → Anthropic Claude → OpenAI GPT → mock fallback
-**Batch vs. individual:** Currently individual calls per finding (~14s for 6 findings). Batching all findings into a single call reduces latency ~70%.
+**Batch processing:** All findings sent in a single LLM call — ~5s total vs ~60s sequential. Graceful fallback to mock if no API key.
 
 ---
 
@@ -125,8 +125,8 @@ Each finding includes a `financial_impact` string (e.g., `"$96,000 / year"` or `
 
 ## Future Roadmap
 
-1. **PDF export** — one-click findings → formatted PDF report for CFO distribution
-2. **Batch LLM calls** — single prompt with all findings → ~5s total vs ~60s sequential
+1. **PDF export** — one-click `GET /api/report` → PDF intelligence report for CFO distribution ✅ DONE
+2. **Batch LLM calls** — single prompt with all findings → ~5s total vs ~60s sequential ✅ DONE
 3. **Azure Container Apps deployment** — containerised API with HTTPS + auth
 4. **JDE SmartBar integration** — direct F1501/F0411/F03B11/F0911 reads via JDE API
 5. **Findings history** — track finding status (open/investigating/resolved) over time
